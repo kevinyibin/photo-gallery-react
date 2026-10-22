@@ -23,9 +23,12 @@ say()  { printf '%s\n' "$*"; }
 ok()   { printf '%s✔%s %s\n' "$G" "$R" "$*"; }
 warn() { printf '%s!%s %s\n' "$Y" "$R" "$*"; }
 err()  { printf '%s✘ %s%s\n' "$RED" "$*" "$R"; }
-# 双击运行时窗口会一闪而过，出错/结束都要停一下
-hold() { [ -t 0 ] && { say ""; printf '%s按回车关闭窗口…%s' "$DIM" "$R"; read -r _; }; }
-die()  { err "$*"; say ""; hold; exit 1; }
+# 双击运行时窗口会一闪而过，出错后必须停住；成功时只在「无参数」（多半是双击）才停，
+# 终端里带参数跑（如 -y / -m）就不会多一次回车。
+HOLD_ON_SUCCESS=0; [ -t 0 ] && [ $# -eq 0 ] && HOLD_ON_SUCCESS=1
+hold()     { [ -t 0 ] && { say ""; printf '%s按回车关闭窗口…%s' "$DIM" "$R"; read -r _; }; }
+hold_end() { [ "$HOLD_ON_SUCCESS" -eq 1 ] && hold; return 0; }
+die()      { err "$*"; say ""; hold; exit 1; }
 
 # ---------- 参数 ----------
 MSG=""; TAG=""; DRY_RUN=0; SKIP_CHECK=0; ASSUME_YES=0
@@ -69,7 +72,7 @@ if [ "$N_CHANGED" -eq 0 ]; then
     warn "工作区没有新改动，但有 $AHEAD 个本地提交还没推上去"
   else
     ok "工作区是干净的，没有需要上传的改动"
-    hold; exit 0
+    hold_end; exit 0
   fi
 else
   say ""
@@ -215,4 +218,4 @@ fi
 say ""
 ok "完成。远端：${REMOTE%.git}"
 say "${DIM}  撤销未提交改动：git restore .   撤销刚才的提交：git reset --soft HEAD~1${R}"
-hold
+hold_end
