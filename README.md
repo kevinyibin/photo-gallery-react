@@ -2,7 +2,7 @@
 
 由原生 JavaScript 版本完整迁移到 **React 18 + TypeScript + Vite** 技术栈，并在其基础上完成一轮**技术栈升级重构**：样式迁移到 **Tailwind CSS**（原子化）、通用组件替换为 **Ant Design 5**、数据流转重构到 **Zustand**。所有功能、页面 UI、交互行为和视觉效果与原版本保持一致。
 
-纯前端应用：照片不离开本机，所有索引、评分、标签、EXIF 数据均存储在浏览器本地（IndexedDB + localStorage）。
+纯前端应用：照片不离开本机，所有索引、评分、标签、EXIF 数据均存储在浏览器本地（IndexedDB + localStorage）
 
 ---
 
