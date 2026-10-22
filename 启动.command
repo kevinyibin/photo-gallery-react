@@ -116,7 +116,7 @@ if port_busy "$PORT"; then
     if ! port_busy "$p"; then START=$p; break; fi
   done
   [ "$START" -gt 0 ] || die "端口 $PORT 起连续 20 个端口都被占用了，请手动指定：./启动.command 9000"
-  warn "端口 $PORT 被其它程序占用${HOLDER:+（$HOLDER）}，改用 $START"
+  warn "端口 $PORT 被其它程序占用${HOLDER:+（${HOLDER}）}，改用 $START"
   PORT="$START"
 fi
 

@@ -485,25 +485,58 @@ export function useChannel(...channels: Channel[]): number { // 组件侧订阅�
 
 自动定位 Node（PATH → nvm → fnm → Homebrew → /usr/local → Volta → asdf → pnpm → WorkBuddy 内置运行时），缺依赖时自动 `npm ci`，端口被别的程序占用会自动顺延，已经在跑则直接打开浏览器。
 
-### 13.2 `上传代码.command` —— 提交并推送到 GitHub
+### 13.2 `Git.command` —— 日常 Git 操作面板
 
-```bash
-./上传代码.command                        # 交互：看改动 → 填说明 → 提交 → 推送
-./上传代码.command "fix: 修好筛选面板"      # 直接给提交说明
-./上传代码.command -t v1.1.0 "feat: xxx"  # 顺便打版本标签并推送
-./上传代码.command -n                     # 只提交不推送（先看看）
-./上传代码.command --no-check             # 跳过类型检查
-./上传代码.command -y                     # 不确认，直接跑完
+**双击**（不带参数）会先读一遍仓库状态，只列出「此刻能做的事」，选号执行；操作完回到菜单，不用重开窗口：
+
+```
+  Git 操作面板  photo-gallery-react
+  分支 main → origin/main · 领先 2 · 落后 0 · 改动 3 处
+────────────────────────────────────────
+   1  提交并推送（最常用）
+   2  只提交，不推送
+   3  取消暂存（保留改动）
+   4  丢弃所有未提交改动（危险）
+   5  只推送（2 个提交待推）
+   6  查看状态与差异
+   7  查看提交历史
+   8  撤销上一次提交（保留改动）
+   9  回滚某次已推送的提交
+  10  分支：查看 / 新建 / 切换 / 合并
+  11  打版本标签并推送
+  12  暂存工作区 / 恢复暂存
+  q   退出
 ```
 
-流程：仓库体检（是否 git 仓库 / 有无远端 / 是否在 merge 中途）→ 列出改动与 diff 统计（超 5MB 的文件会被拦下确认）→ `tsc --noEmit` 自检（可选跳过）→ 提交 → 推送。
+菜单会随状态变化：工作区干净时不出现「提交」；没有待推提交时不出现「推送」；落后远端才出现「拉取」；有 rebase/merge 没做完才出现「中止」。
 
-推送失败会按原因自动处理：
+也可以直接下命令（脚本化、或者习惯了快）：
 
-| 情况 | 处理 |
+| 命令 | 作用 |
 | --- | --- |
-| 网络不通（SSL / 超时），且 shell 里有 `HTTPS_PROXY` | 自动带代理重试一次 |
-| 远端有本地没有的提交（`rejected` / `non-fast-forward`） | 自动 `git pull --rebase --autostash` 后重推；rebase 有冲突则中止并提示手动处理 |
-| 认证失败 | 提示重新输入账号 / PAT，并说明改动仍安全地留在本地 |
+| `./Git.command push "fix: xxx"` | 提交并推送（给说明；不给则自动生成） |
+| `./Git.command commit` | 只提交 |
+| `./Git.command pushonly` | 只推送已有提交 |
+| `./Git.command pull` / `sync` | 拉取（rebase） / 先拉后推 |
+| `./Git.command status` / `log` | 看状态与差异 / 看历史 |
+| `./Git.command undo` | 丢弃未提交改动（不可恢复，需确认） |
+| `./Git.command unstage` / `uncommit` | 取消暂存 / 撤销上次提交（保留改动） |
+| `./Git.command revert [hash]` | 回滚某次已推送提交（生成反向提交，不重写历史） |
+| `./Git.command branch [list\|new\|switch\|merge]` | 分支操作 |
+| `./Git.command tag v1.1.0` | 打标签并推送 |
+| `./Git.command abort` | 中止进行中的 rebase / merge / cherry-pick |
+| `./Git.command stash [save\|pop\|list]` | 暂存 / 恢复工作区 |
 
-提交说明留空时会自动生成一个可用的默认值，例如 `chore: 更新 3 个文件（src/components, README.md）`。
+通用开关：`-y` 不确认 · `-n` 只提交不推送 · `--no-check` 跳过类型检查 · `-m "说明"` · `-i` 强制进菜单 · `-h` 帮助。
+
+**安全约定**：破坏性操作（丢弃改动、撤销提交、回滚、合并）都要显式确认；**非交互环境（脚本、管道、CI）里没给 `-y` 就一律不执行**，绝不把「无人应答」当成「默认同意」。
+
+#### 提交与推送做了什么
+
+- 仓库体检：是否 git 仓库、有无远端、是否卡在 merge/rebase 中途
+- 列出改动与 diff 统计；单文件 > 5MB 会拦下确认
+- `tsc --noEmit` 类型检查（`--no-check` 可跳过），不通过时询问
+- 提交说明留空时自动生成，如 `chore: 更新 3 个文件（src/components, README.md）`
+- 推送失败按原因处理：网络类错误且 shell 里有 `HTTPS_PROXY` 则带代理重试；远端有新提交则 `pull --rebase --autostash` 后重推；冲突时中止并给出下一步命令
+
+> 兼容说明：`上传代码.command` 现在只是一个转发别名，指向同一个 `Git.command`，老习惯不用改。
