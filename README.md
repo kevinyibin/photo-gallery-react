@@ -469,3 +469,41 @@ export function useChannel(...channels: Channel[]): number { // 组件侧订阅�
 - 快捷键提示（`L` / `Delete` / `←` `→` / `R` / `F` / `I` / `Esc`）与全局键位表一致，不做第二套约定；
 - 菜单打开时键盘由菜单接管（capture 阶段 `stopPropagation`），不会出现「菜单还开着，按 L 把当前图标记喜欢了」的穿透；Esc 只关菜单、再按一次才关大图；关闭后焦点归还打开前的元素；
 - 无障碍：`role="menu"`，条目 `menuitem` / `menuitemcheckbox` / `menuitemradio`，↑↓/Home/End/Enter/Tab 全部可用，自绘的星级行标记为 `presentation` 不可聚焦。
+
+---
+
+## 十三、日常开发：两个脚本
+
+仓库根目录有两个可双击的快捷脚本，也可以用终端调用。
+
+### 13.1 `启动.command` —— 起开发服务器
+
+```bash
+./启动.command          # 默认 http://127.0.0.1:3000/
+./启动.command 8080     # 指定端口
+```
+
+自动定位 Node（PATH → nvm → fnm → Homebrew → /usr/local → Volta → asdf → pnpm → WorkBuddy 内置运行时），缺依赖时自动 `npm ci`，端口被别的程序占用会自动顺延，已经在跑则直接打开浏览器。
+
+### 13.2 `上传代码.command` —— 提交并推送到 GitHub
+
+```bash
+./上传代码.command                        # 交互：看改动 → 填说明 → 提交 → 推送
+./上传代码.command "fix: 修好筛选面板"      # 直接给提交说明
+./上传代码.command -t v1.1.0 "feat: xxx"  # 顺便打版本标签并推送
+./上传代码.command -n                     # 只提交不推送（先看看）
+./上传代码.command --no-check             # 跳过类型检查
+./上传代码.command -y                     # 不确认，直接跑完
+```
+
+流程：仓库体检（是否 git 仓库 / 有无远端 / 是否在 merge 中途）→ 列出改动与 diff 统计（超 5MB 的文件会被拦下确认）→ `tsc --noEmit` 自检（可选跳过）→ 提交 → 推送。
+
+推送失败会按原因自动处理：
+
+| 情况 | 处理 |
+| --- | --- |
+| 网络不通（SSL / 超时），且 shell 里有 `HTTPS_PROXY` | 自动带代理重试一次 |
+| 远端有本地没有的提交（`rejected` / `non-fast-forward`） | 自动 `git pull --rebase --autostash` 后重推；rebase 有冲突则中止并提示手动处理 |
+| 认证失败 | 提示重新输入账号 / PAT，并说明改动仍安全地留在本地 |
+
+提交说明留空时会自动生成一个可用的默认值，例如 `chore: 更新 3 个文件（src/components, README.md）`。
