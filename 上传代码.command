@@ -60,7 +60,7 @@ ok "远端：$REMOTE"
 
 # ---------- 2. 看改了什么 ----------
 git add -A
-CHANGED="$(git diff --cached --name-only)"
+CHANGED="$(git -c core.quotepath=false diff --cached --name-only)"
 N_CHANGED=$(printf '%s' "$CHANGED" | grep -c . || true)
 
 if [ "$N_CHANGED" -eq 0 ]; then
@@ -74,7 +74,7 @@ if [ "$N_CHANGED" -eq 0 ]; then
 else
   say ""
   say "${B}本次改动（$N_CHANGED 个文件）：${R}"
-  git diff --cached --stat | sed 's/^/  /'
+  git -c core.quotepath=false diff --cached --stat | sed 's/^/  /'
   # 保险：大文件容易被误提交，超过 5MB 先拦一下
   BIG="$(git diff --cached --name-only -z | while IFS= read -r -d '' f; do
            [ -f "$f" ] || continue
@@ -94,7 +94,7 @@ fi
 if [ "$N_CHANGED" -gt 0 ] && [ -z "$MSG" ]; then
   # 自动生成一个可用的默认值：按顶层改动位置归纳
   SCOPE="$(printf '%s\n' "$CHANGED" | sed 's#/.*##' | sort -u | paste -sd ',' - | sed 's/,/, /g')"
-  MSG="chore: 更新 $N_CHANGED 个文件（$SCOPE）"
+  MSG="chore: 更新 $N_CHANGED 个文件（${SCOPE}）"
   if [ -t 0 ] && [ "$ASSUME_YES" -eq 0 ]; then
     say ""
     say "${DIM}提交说明建议用前缀：feat / fix / docs / refactor / chore${R}"
