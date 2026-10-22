@@ -62,6 +62,24 @@ BRANCH="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo main)"
 ok "仓库：$(basename "$DIR")   分支：$BRANCH"
 ok "远端：$REMOTE"
 
+# ---------- 标签 ----------
+# 抽成函数：干净仓库时也要能「只给当前提交打标签」，所以不能只放在文件末尾
+make_tag() {
+  [ -n "$TAG" ] || return 0
+  if git rev-parse "$TAG" >/dev/null 2>&1; then
+    warn "标签 $TAG 已存在，跳过"; return 0
+  fi
+  git tag -a "$TAG" -m "${MSG:-$TAG}" && ok "已创建标签 $TAG"
+  if [ "$DRY_RUN" -eq 0 ]; then
+    if git push origin "$TAG" >/dev/null 2>&1; then
+      ok "标签已推送（去 GitHub Releases 里发布即可）"
+    else
+      warn "标签推送失败，稍后手动：git push origin $TAG"
+    fi
+  fi
+  return 0
+}
+
 # ---------- 2. 看改了什么 ----------
 git add -A
 CHANGED="$(git -c core.quotepath=false diff --cached --name-only)"
@@ -73,6 +91,7 @@ if [ "$N_CHANGED" -eq 0 ]; then
     warn "工作区没有新改动，但有 $AHEAD 个本地提交还没推上去"
   else
     ok "工作区是干净的，没有需要上传的改动"
+    if [ -n "$TAG" ]; then say ""; warn "没有代码改动，只为当前提交打标签"; make_tag; fi
     hold_end; exit 0
   fi
 else
@@ -204,17 +223,7 @@ else
 fi
 
 # ---------- 8. 可选打标签 ----------
-if [ -n "$TAG" ]; then
-  if git rev-parse "$TAG" >/dev/null 2>&1; then
-    warn "标签 $TAG 已存在，跳过"
-  else
-    git tag -a "$TAG" -m "${MSG:-$TAG}" && ok "已创建标签 $TAG"
-    if [ "$DRY_RUN" -eq 0 ]; then
-      if git push origin "$TAG" >/dev/null 2>&1; then ok "标签已推送（去 GitHub Releases 里发布即可）"
-      else warn "标签推送失败，稍后：git push origin $TAG"; fi
-    fi
-  fi
-fi
+make_tag
 
 say ""
 ok "完成。远端：${REMOTE%.git}"
