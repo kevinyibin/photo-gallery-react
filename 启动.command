@@ -91,24 +91,32 @@ else
 fi
 
 # ---------- 3. 端口检查 ----------
-port_busy() { lsof -nP -iTCP:"$1" -sTCP:LISTEN >/dev/null 2>&1; }
+# 不用 lsof 判占用：它在部分受限环境 / 沙箱里对「别的会话启动的进程」不可见，
+# 会导致误判成空闲、再去 --strictPort 启动而失败。改从「能不能连上」判断，最可靠。
+port_busy() { nc -z 127.0.0.1 "$1" >/dev/null 2>&1; }
+
+# 已经是本项目的开发服务器？用页面标题做指纹，避免误把别的服务当成自己的
+is_our_app() {
+  curl -s --max-time 2 "http://127.0.0.1:$1/" 2>/dev/null | grep -q '摄影作品集'
+}
+
+if is_our_app "$PORT"; then
+  # 上一个开发服务器还活着：直接复用，不再重复启动
+  ok "端口 $PORT 上已经是本项目在运行，直接打开浏览器"
+  open "http://127.0.0.1:$PORT/"
+  say ""
+  say "${DIM}  如需重启：lsof -ti tcp:$PORT | xargs kill${R}"
+  sleep 2; exit 0
+fi
 
 if port_busy "$PORT"; then
   HOLDER="$(lsof -nP -iTCP:"$PORT" -sTCP:LISTEN -Fct 2>/dev/null | tr -d '\n')"
-  if printf '%s' "$HOLDER" | grep -qi 'vite\|node'; then
-    # 上一个开发服务器还活着：直接复用，不再重复启动
-    ok "端口 $PORT 上已有服务在运行，直接打开浏览器"
-    open "http://127.0.0.1:$PORT/"
-    say ""
-    say "${DIM}  如需重启：lsof -ti tcp:$PORT | xargs kill${R}"
-    sleep 2; exit 0
-  fi
   START=0
-  for p in $(seq "$PORT" $((PORT + 20))); do
+  for p in $(seq $((PORT + 1)) $((PORT + 20))); do
     if ! port_busy "$p"; then START=$p; break; fi
   done
   [ "$START" -gt 0 ] || die "端口 $PORT 起连续 20 个端口都被占用了，请手动指定：./启动.command 9000"
-  warn "端口 $PORT 被其他程序占用（$HOLDER），改用 $START"
+  warn "端口 $PORT 被其它程序占用${HOLDER:+（$HOLDER）}，改用 $START"
   PORT="$START"
 fi
 
