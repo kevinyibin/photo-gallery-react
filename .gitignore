@@ -1,0 +1,22 @@
+# 依赖
+node_modules/
+
+# 构建产物（由 npm run build 生成，随时可重建）
+dist/
+
+# 编辑器 / 系统
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# 日志与本地缓存
+*.log
+npm-debug.log*
+.vite/
+.cache/
+
+# 本地环境变量（若以后引入，不要提交）
+.env
+.env.local
+.env.*.local

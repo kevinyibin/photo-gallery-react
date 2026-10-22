@@ -1,0 +1,121 @@
+/* ============================================================
+ * 全局样式 —— Tailwind CSS 方案
+ * 原版 967 行 styles.css 已迁移为各组件内的原子化工具类；
+ * 本文件只保留无法（或不宜）用工具类表达的部分：
+ *   1. 主题 CSS 变量（:root / [data-theme="dark"]）
+ *   2. 基础字体 / 滚动条 / [hidden] 兜底
+ *   3. 原生 ::-webkit-scrollbar 样式
+ *   4. 窄屏下用 ::before 替换按钮文案的三条兼容 shim（#lbPlay 等）
+ * ============================================================ */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ===== 主题变量（与原版完全一致） ===== */
+:root {
+  --bg: #f4f6f8;
+  --panel: #ffffff;
+  --panel-2: #fafbfc;
+  --text: #171b21;
+  --muted: #6b7381;
+  --border: #e3e7ec;
+  --border-2: #eef1f5;
+  --accent: #3b6ef6;
+  --accent-soft: rgba(59, 110, 246, .10);
+  --shadow: 0 1px 2px rgba(16, 24, 40, .05), 0 8px 24px rgba(16, 24, 40, .06);
+  --shadow-lg: 0 24px 70px rgba(10, 15, 30, .28);
+  --tile: #eef1f5;
+  --hover: #f0f3f7;
+  --radius: 12px;
+  --topbar-h: 56px;
+  --status-h: 30px;
+
+  /* 滚动条配色（浅色沿用原 --border / --muted 的取值，保持既有观感） */
+  --sb-thumb: #e3e7ec;
+  --sb-thumb-hover: #6b7381;
+  /* 让原生滚动条 / 原生表单控件跟随主题；深色下未自定义样式的滚动区不会再是浅色 */
+  color-scheme: light;
+}
+[data-theme="dark"] {
+  --bg: #0e1116;
+  --panel: #161a21;
+  --panel-2: #1b2028;
+  --text: #e6e9ef;
+  --muted: #8f97a5;
+  --border: #262c36;
+  --border-2: #1f2530;
+  --accent: #5b8dff;
+  --accent-soft: rgba(91, 141, 255, .16);
+  --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px rgba(0, 0, 0, .35);
+  --shadow-lg: 0 24px 70px rgba(0, 0, 0, .6);
+  --tile: #20262f;
+  --hover: #1e242d;
+
+  /* 深色下不能沿用 --border（#262c36 叠在 #0e1116 / #161a21 上几乎不可见），
+     改用半透明白：无论背景是 --bg、--panel 还是弹出层 #1b2028 都保持可见且不过曝 */
+  --sb-thumb: rgba(255, 255, 255, .24);
+  --sb-thumb-hover: rgba(255, 255, 255, .42);
+  color-scheme: dark;
+}
+
+/* ===== 基础层 ===== */
+@layer base {
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    font: 14px/1.5 -apple-system, BlinkMacSystemFont, "SF Pro SC", "PingFang SC",
+          "Microsoft YaHei", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--text);
+    background: var(--bg);
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+  }
+  button, input, select { font: inherit; color: inherit; }
+  /* hidden 属性优先级高于一切 display 工具类（原版行为） */
+  [hidden] { display: none !important; }
+
+  /* 轻提示（antd message）下移到顶栏之下，避免遮挡顶栏按钮 */
+  .ant-message { top: 66px; }
+
+  /* 原生滚动条（无法用工具类表达）
+     .scroller = 「图库瀑布流 / 筛选面板 / 目录树 / 下拉菜单 / 弹窗列表」共用的滚动容器类：
+     宽度、圆角、轨道色、滑块色、hover 态、以及「仅在滚动时显示」行为各处完全一致。
+     滑块用 3px 透明边框 + background-clip:content-box 收窄视觉宽度，
+     隐藏时只把背景设为透明（不改宽度），因此滚动条不会引起内容回流。
+     配色统一走 --sb-thumb / --sb-thumb-hover 两个令牌，深浅主题各自定义，
+     不再直接用 --border / --muted（深色下它们太暗，滑块几乎不可见）。 */
+  .scroller { scrollbar-width: thin; scrollbar-color: var(--sb-thumb) transparent; }
+  .scroller::-webkit-scrollbar { width: 10px; height: 10px; }
+  .scroller::-webkit-scrollbar-track { background: transparent; }
+  .scroller::-webkit-scrollbar-thumb {
+    background: transparent; border-radius: 6px; border: 3px solid transparent;
+    background-clip: content-box;
+  }
+  /* 滚动中（由 useScrollReveal 加上 is-scrolling）或指针悬停在该区域时显示滑块 */
+  .scroller.is-scrolling::-webkit-scrollbar-thumb,
+  .scroller:hover::-webkit-scrollbar-thumb {
+    background: var(--sb-thumb); background-clip: content-box;
+  }
+  .scroller.is-scrolling::-webkit-scrollbar-thumb:hover,
+  .scroller:hover::-webkit-scrollbar-thumb:hover {
+    background: var(--sb-thumb-hover); background-clip: content-box;
+  }
+  /* 详情页信息面板是深色语境（深浅主题下都是深色底），单独一套，不随主题切换 */
+  .lb-meta { scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, .18) transparent; }
+  .lb-meta::-webkit-scrollbar { width: 8px; }
+  .lb-meta::-webkit-scrollbar-thumb { background: rgba(255,255,255,.18); border-radius: 6px; }
+  .lb-meta::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,.34); }
+
+  /* 窄屏（≤900px）下详情页按钮只留图标（文案由组件内的 max-[900px]:hidden 收起），
+     多图布局分段整体隐藏 —— 与原版媒体查询行为一致。
+     原先这里用 ::before content 注入 ▶ / ⛶ / ℹ 字符，改用统一 Icon 组件后不再需要。 */
+  @media (max-width: 900px) {
+    #lbLayoutSeg { display: none !important; }
+  }
+}
+
+/* ===== 右键上下文菜单展开动效（origin 由组件设为左上角，从鼠标位置展开） ===== */
+@keyframes ctxin {
+  from { opacity: 0; transform: scale(.97) translateY(-2px); }
+  to   { opacity: 1; transform: none; }
+}
