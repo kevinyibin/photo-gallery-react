@@ -25,9 +25,10 @@ warn() { printf '%s!%s %s\n' "$Y" "$R" "$*"; }
 err()  { printf '%s✘ %s%s\n' "$RED" "$*" "$R"; }
 # 双击运行时窗口会一闪而过，出错后必须停住；成功时只在「无参数」（多半是双击）才停，
 # 终端里带参数跑（如 -y / -m）就不会多一次回车。
-HOLD_ON_SUCCESS=0; [ -t 0 ] && [ $# -eq 0 ] && HOLD_ON_SUCCESS=1
-hold()     { [ -t 0 ] && { say ""; printf '%s按回车关闭窗口…%s' "$DIM" "$R"; read -r _; }; }
-hold_end() { [ "$HOLD_ON_SUCCESS" -eq 1 ] && hold; return 0; }
+HOLD_AFTER=0; [ -t 0 ] && [ $# -eq 0 ] && HOLD_AFTER=1
+# 只有「无参数启动」（多半是双击）才停住窗口；终端里带参数跑不会卡在回车
+hold()     { [ "$HOLD_AFTER" -eq 1 ] && { say ""; printf '%s按回车关闭窗口…%s' "$DIM" "$R"; read -r _; }; return 0; }
+hold_end() { hold; return 0; }
 die()      { err "$*"; say ""; hold; exit 1; }
 
 # ---------- 参数 ----------
